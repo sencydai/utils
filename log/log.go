@@ -35,10 +35,10 @@ const (
 var (
 	levelText = map[int]string{DEBUG_N: sDEBUG, INFO_N: sINFO, WARN_N: sWARN, ERROR_N: sERROR, FATAL_N: sFATAL}
 
-	loggerMgr = make(map[string]*LoggerData)
+	loggerMgr = make(map[string]*loggerData)
 )
 
-type LoggerData struct {
+type loggerData struct {
 	level  LogLevel
 	file   *os.File
 	writer *bufio.Writer
@@ -46,7 +46,13 @@ type LoggerData struct {
 	chOutput chan string
 }
 
+var DefaultLogger = GetLogger("DefaultLogger")
+
 type ILogger interface {
+	SetFileName(fileName string) error
+	SetLevel(level LogLevel) bool
+	Close()
+
 	Debug(...interface{})
 	Debugf(string, ...interface{})
 	Info(...interface{})
@@ -59,8 +65,8 @@ type ILogger interface {
 	Fatalf(string, ...interface{})
 }
 
-func newLogger() *LoggerData {
-	logger := &LoggerData{level: DEBUG_N, chOutput: make(chan string, 100)}
+func newLogger() *loggerData {
+	logger := &loggerData{level: DEBUG_N, chOutput: make(chan string, 100)}
 	go func() {
 		var output string
 		var hasData bool
@@ -86,7 +92,7 @@ func newLogger() *LoggerData {
 	return logger
 }
 
-func GetLogger(name string) *LoggerData {
+func GetLogger(name string) ILogger {
 	if logger, ok := loggerMgr[name]; ok {
 		return logger
 	}
@@ -94,7 +100,7 @@ func GetLogger(name string) *LoggerData {
 	return loggerMgr[name]
 }
 
-func (l *LoggerData) SetFileName(fileName string) error {
+func (l *loggerData) SetFileName(fileName string) error {
 	os.MkdirAll(path.Dir(fileName), os.ModeDir)
 	if file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666); err != nil {
 		return err
@@ -104,7 +110,7 @@ func (l *LoggerData) SetFileName(fileName string) error {
 	}
 }
 
-func (l *LoggerData) SetLevel(level LogLevel) bool {
+func (l *loggerData) SetLevel(level LogLevel) bool {
 	if level < DEBUG_N || level >= TRASH {
 		return false
 	}
@@ -113,7 +119,7 @@ func (l *LoggerData) SetLevel(level LogLevel) bool {
 	return true
 }
 
-func (l *LoggerData) Close() {
+func (l *loggerData) Close() {
 	for {
 		if len(l.chOutput) == 0 {
 			time.Sleep(syncPeriod + time.Millisecond*10)
@@ -123,54 +129,54 @@ func (l *LoggerData) Close() {
 	}
 }
 
-func (l *LoggerData) writeBufferf(level LogLevel, skip int, format string, data ...interface{}) {
+func (l *loggerData) writeBufferf(level LogLevel, skip int, format string, data ...interface{}) {
 	if level >= l.level {
 		l.chOutput <- fmt.Sprintf("%s %s [%s] - %s\n", utils.TimeFormat(time.Now()), levelText[level], utils.FileLine(skip), fmt.Sprintf(format, data...))
 	}
 }
 
-func (l *LoggerData) writeBuffer(level LogLevel, skip int, data ...interface{}) {
+func (l *loggerData) writeBuffer(level LogLevel, skip int, data ...interface{}) {
 	if level >= l.level {
 		l.chOutput <- fmt.Sprintf("%s %s [%s] - %s\n", utils.TimeFormat(time.Now()), levelText[level], utils.FileLine(skip), fmt.Sprint(data...))
 	}
 }
 
-func (l *LoggerData) Debug(data ...interface{}) {
+func (l *loggerData) Debug(data ...interface{}) {
 	l.writeBuffer(DEBUG_N, 3, data...)
 }
 
-func (l *LoggerData) Debugf(format string, data ...interface{}) {
+func (l *loggerData) Debugf(format string, data ...interface{}) {
 	l.writeBufferf(DEBUG_N, 3, format, data...)
 }
 
-func (l *LoggerData) Info(data ...interface{}) {
+func (l *loggerData) Info(data ...interface{}) {
 	l.writeBuffer(INFO_N, 3, data...)
 }
 
-func (l *LoggerData) Infof(format string, data ...interface{}) {
+func (l *loggerData) Infof(format string, data ...interface{}) {
 	l.writeBufferf(INFO_N, 3, format, data...)
 }
 
-func (l *LoggerData) Warn(data ...interface{}) {
+func (l *loggerData) Warn(data ...interface{}) {
 	l.writeBuffer(WARN_N, 3, data...)
 }
 
-func (l *LoggerData) Warnf(format string, data ...interface{}) {
+func (l *loggerData) Warnf(format string, data ...interface{}) {
 	l.writeBufferf(WARN_N, 3, format, data...)
 }
 
-func (l *LoggerData) Error(data ...interface{}) {
+func (l *loggerData) Error(data ...interface{}) {
 	l.writeBuffer(ERROR_N, 3, data...)
 }
 
-func (l *LoggerData) Errorf(format string, data ...interface{}) {
+func (l *loggerData) Errorf(format string, data ...interface{}) {
 	l.writeBufferf(ERROR_N, 3, format, data...)
 }
 
-func (l *LoggerData) Fatal(data ...interface{}) {
+func (l *loggerData) Fatal(data ...interface{}) {
 	l.writeBuffer(FATAL_N, 3, data...)
 }
 
-func (l *LoggerData) Fatalf(format string, data ...interface{}) {
+func (l *loggerData) Fatalf(format string, data ...interface{}) {
 	l.writeBufferf(FATAL_N, 3, format, data...)
 }

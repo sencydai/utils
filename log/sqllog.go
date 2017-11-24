@@ -5,54 +5,59 @@ import (
 )
 
 type SqlLogger struct {
-	logger  *LoggerData
+	logger  *loggerData
 	showSql bool
 	level   core.LogLevel
 }
 
-func NewSqlLogger(l *LoggerData) *SqlLogger {
-	return &SqlLogger{logger: l, showSql: true, level: core.LOG_ERR}
+func NewSqlLogger(l ILogger) *SqlLogger {
+	return &SqlLogger{logger: l.(*loggerData), showSql: true, level: core.LOG_ERR}
 }
 
 func (sl *SqlLogger) Debug(v ...interface{}) {
-	if core.LOG_DEBUG >= sl.level && sl.logger != nil {
+	if core.LOG_DEBUG >= sl.level {
 		sl.logger.writeBuffer(DEBUG_N, 4, v...)
 	}
 }
 
 func (sl *SqlLogger) Debugf(format string, v ...interface{}) {
-	if core.LOG_DEBUG >= sl.level && sl.logger != nil {
+	if core.LOG_DEBUG >= sl.level {
 		sl.logger.writeBufferf(DEBUG_N, 4, format, v...)
 	}
 }
 
 func (sl *SqlLogger) Error(v ...interface{}) {
-	if core.LOG_ERR >= sl.level && sl.logger != nil {
+	if core.LOG_ERR >= sl.level {
 		sl.logger.writeBuffer(ERROR_N, 4, v...)
 	}
 }
+
 func (sl *SqlLogger) Errorf(format string, v ...interface{}) {
-	if core.LOG_ERR >= sl.level && sl.logger != nil {
+	if core.LOG_ERR >= sl.level {
 		sl.logger.writeBufferf(ERROR_N, 4, format, v...)
 	}
 }
+
 func (sl *SqlLogger) Info(v ...interface{}) {
-	if core.LOG_INFO >= sl.level && sl.logger != nil {
+	if core.LOG_INFO >= sl.level {
 		sl.logger.writeBuffer(INFO_N, 4, v...)
 	}
 }
+
 func (sl *SqlLogger) Infof(format string, v ...interface{}) {
-	if core.LOG_INFO >= sl.level && sl.logger != nil {
+	if core.LOG_INFO >= sl.level {
 		sl.logger.writeBufferf(INFO_N, 4, format, v...)
 	}
 }
+
 func (sl *SqlLogger) Warn(v ...interface{}) {
-	if core.LOG_WARNING >= sl.level && sl.logger != nil {
+	if core.LOG_WARNING >= sl.level {
 		sl.logger.writeBuffer(WARN_N, 4, v...)
 	}
 }
+
 func (sl *SqlLogger) Warnf(format string, v ...interface{}) {
-	if core.LOG_WARNING >= sl.level && sl.logger != nil {
+	if core.LOG_WARNING >= sl.level {
 		sl.logger.writeBufferf(WARN_N, 4, format, v...)
 	}
 }
