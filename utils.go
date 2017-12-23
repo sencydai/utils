@@ -26,21 +26,21 @@ func FileLine(skip int) string {
 	return fmt.Sprintf("%s:%d", file[i+1:], line)
 }
 
-type MutexGroup struct {
+type Semaphore struct {
 	ch chan bool
 }
 
-func NewMutexGroup(count int) *MutexGroup {
+func NewSemaphore(count int) *Semaphore {
 	if count <= 0 {
 		return nil
 	}
-	return &MutexGroup{ch: make(chan bool, count)}
+	return &Semaphore{ch: make(chan bool, count)}
 }
 
-func (s *MutexGroup) Lock() {
+func (s *Semaphore) Require() {
 	s.ch <- true
 }
 
-func (s *MutexGroup) UnLock() {
+func (s *Semaphore) Release() {
 	<-s.ch
 }
