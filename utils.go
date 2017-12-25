@@ -11,7 +11,7 @@ func TimeFormat(t time.Time) string {
 	return t.Format("2006-01-02 15:04:05")
 }
 
-// FileLine 调用处的文件名和行号
+//FileLine 调用处的文件名和行号
 func FileLine(skip int) string {
 	_, file, line, _ := runtime.Caller(skip)
 	i, count := len(file)-4, 0
