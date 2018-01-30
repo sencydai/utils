@@ -123,7 +123,7 @@ func getMomentDelay(moment string) time.Duration {
 		return trigger.Sub(now)
 	}
 
-	return now.AddDate(0, 0, 1).Sub(trigger)
+	return time.Hour*24 - now.Sub(trigger)
 }
 
 func DayLoop(moment string, cbFunc interface{}, args ...interface{}) *Timer {
