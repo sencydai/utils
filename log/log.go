@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/sencydai/utils"
+	"github.com/sencydai/utils/systime"
 	"os"
 	"path"
 	"time"
@@ -28,14 +29,8 @@ const (
 	sERROR = "ERROR"
 	sFATAL = "FATAL"
 
-	syncPeriod     = time.Millisecond * 100
+	syncPeriod     = time.Millisecond * 50
 	defaultBufSize = 1024 * 1024
-)
-
-var (
-	levelText = map[int]string{DEBUG_N: sDEBUG, INFO_N: sINFO, WARN_N: sWARN, ERROR_N: sERROR, FATAL_N: sFATAL}
-
-	loggerMgr = make(map[string]*loggerData)
 )
 
 type loggerData struct {
@@ -45,8 +40,6 @@ type loggerData struct {
 
 	chOutput chan string
 }
-
-var DefaultLogger = GetLogger("DefaultLogger")
 
 type ILogger interface {
 	SetFileName(fileName string) error
@@ -65,8 +58,32 @@ type ILogger interface {
 	Fatalf(string, ...interface{})
 }
 
+var (
+	Logger = newLogger()
+
+	SetFileName = Logger.SetFileName
+	SetLevel    = Logger.SetLevel
+	Close       = Logger.Close
+
+	Debug  = Logger.Debug
+	Debugf = Logger.Debugf
+	Info   = Logger.Info
+	Infof  = Logger.Infof
+	Warn   = Logger.Warn
+	Warnf  = Logger.Warnf
+	Error  = Logger.Error
+	Errorf = Logger.Errorf
+	Fatal  = Logger.Fatal
+	Fatalf = Logger.Fatalf
+)
+
+var (
+	skipLevel = 4
+	levelText = map[int]string{DEBUG_N: sDEBUG, INFO_N: sINFO, WARN_N: sWARN, ERROR_N: sERROR, FATAL_N: sFATAL}
+)
+
 func newLogger() *loggerData {
-	logger := &loggerData{level: DEBUG_N, chOutput: make(chan string, 100)}
+	logger := &loggerData{level: DEBUG_N, chOutput: make(chan string, 1000)}
 	go func() {
 		var output string
 		var hasData bool
@@ -90,14 +107,6 @@ func newLogger() *loggerData {
 	}()
 
 	return logger
-}
-
-func GetLogger(name string) ILogger {
-	if logger, ok := loggerMgr[name]; ok {
-		return logger
-	}
-	loggerMgr[name] = newLogger()
-	return loggerMgr[name]
 }
 
 func (l *loggerData) SetFileName(fileName string) error {
@@ -129,54 +138,54 @@ func (l *loggerData) Close() {
 	}
 }
 
-func (l *loggerData) writeBufferf(level LogLevel, skip int, format string, data ...interface{}) {
+func (l *loggerData) writeBufferf(level LogLevel, format string, data ...interface{}) {
 	if level >= l.level {
-		l.chOutput <- fmt.Sprintf("%s %s [%s] - %s\n", utils.TimeFormat(time.Now()), levelText[level], utils.FileLine(skip), fmt.Sprintf(format, data...))
+		l.chOutput <- fmt.Sprintf("%s %s [%s] - %s\n", systime.FormatDateTime(time.Now()), levelText[level], utils.FileLine(skipLevel), fmt.Sprintf(format, data...))
 	}
 }
 
-func (l *loggerData) writeBuffer(level LogLevel, skip int, data ...interface{}) {
+func (l *loggerData) writeBuffer(level LogLevel, data ...interface{}) {
 	if level >= l.level {
-		l.chOutput <- fmt.Sprintf("%s %s [%s] - %s\n", utils.TimeFormat(time.Now()), levelText[level], utils.FileLine(skip), fmt.Sprint(data...))
+		l.chOutput <- fmt.Sprintf("%s %s [%s] - %s\n", systime.FormatDateTime(time.Now()), levelText[level], utils.FileLine(skipLevel), fmt.Sprint(data...))
 	}
 }
 
 func (l *loggerData) Debug(data ...interface{}) {
-	l.writeBuffer(DEBUG_N, 3, data...)
+	l.writeBuffer(DEBUG_N, data...)
 }
 
 func (l *loggerData) Debugf(format string, data ...interface{}) {
-	l.writeBufferf(DEBUG_N, 3, format, data...)
+	l.writeBufferf(DEBUG_N, format, data...)
 }
 
 func (l *loggerData) Info(data ...interface{}) {
-	l.writeBuffer(INFO_N, 3, data...)
+	l.writeBuffer(INFO_N, data...)
 }
 
 func (l *loggerData) Infof(format string, data ...interface{}) {
-	l.writeBufferf(INFO_N, 3, format, data...)
+	l.writeBufferf(INFO_N, format, data...)
 }
 
 func (l *loggerData) Warn(data ...interface{}) {
-	l.writeBuffer(WARN_N, 3, data...)
+	l.writeBuffer(WARN_N, data...)
 }
 
 func (l *loggerData) Warnf(format string, data ...interface{}) {
-	l.writeBufferf(WARN_N, 3, format, data...)
+	l.writeBufferf(WARN_N, format, data...)
 }
 
 func (l *loggerData) Error(data ...interface{}) {
-	l.writeBuffer(ERROR_N, 3, data...)
+	l.writeBuffer(ERROR_N, data...)
 }
 
 func (l *loggerData) Errorf(format string, data ...interface{}) {
-	l.writeBufferf(ERROR_N, 3, format, data...)
+	l.writeBufferf(ERROR_N, format, data...)
 }
 
 func (l *loggerData) Fatal(data ...interface{}) {
-	l.writeBuffer(FATAL_N, 3, data...)
+	l.writeBuffer(FATAL_N, data...)
 }
 
 func (l *loggerData) Fatalf(format string, data ...interface{}) {
-	l.writeBufferf(FATAL_N, 3, format, data...)
+	l.writeBufferf(FATAL_N, format, data...)
 }
